@@ -40,3 +40,13 @@ Thumbs.db
 # Logs
 *.log
 logs/
+
+# ComfyUI runtime internals (keep launcher + RUNBOOK + workflow JSONs)
+comfyui-runtime/venv/
+comfyui-runtime/ComfyUI/
+comfyui-runtime/hf-cache/
+comfyui-runtime/downloads/
+comfyui-runtime/outputs/
+comfyui-runtime/logs/
+comfyui-runtime/ComfyUI/models/
+comfyui-runtime/ComfyUI/custom_nodes/*/__pycache__/
