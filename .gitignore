@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+.env
+.env.*
+
+# Node / Remotion
+node_modules/
+.next/
+out/
+dist/
+build/
+
+# Generated media (large, reproducible)
+*.mp4
+*.mov
+*.webm
+*.mkv
+*.gif
+*.wav
+*.mp3
+*.png
+*.jpg
+*.jpeg
+*.webp
+renders/
+output/
+outputs/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
