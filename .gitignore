@@ -50,3 +50,8 @@ comfyui-runtime/outputs/
 comfyui-runtime/logs/
 comfyui-runtime/ComfyUI/models/
 comfyui-runtime/ComfyUI/custom_nodes/*/__pycache__/
+# Skill runtime state (job queue / leases)
+comfyui-runtime/state/
+scripts/__pycache__/
+reference/__pycache__/
+docs/__pycache__/

@@ -12,6 +12,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import shutil
 import subprocess
@@ -23,21 +24,22 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import run_workflow  # noqa: E402
 
-
 SHOTS = [
     {
         "name": "shot1-smile",
         "megapixels": 0.4,
         "duration": 5.0,
         "prompt": (
-            "A young witch named Julia with long brown hair, wearing a black "
-            "Gryffindor robe, sits at a wooden desk in a candlelit Hogwarts "
+            "The exact girl from the first frame is Julia. Preserve her exact "
+            "face, age, long brown hair, brown eyes, Gryffindor robe and identity. "
+            "No new character, no replacement girl, no balloons, no unrelated "
+            "objects. Julia sits at a wooden desk in a candlelit Hogwarts "
             "Transfiguration classroom. She smiles warmly at the camera, then "
             "turns her head slowly to look at the professor at the chalkboard. "
-            "Cinematic warm amber lighting, magical atmosphere, 24fps."
+            "Preserve the classroom, owl and composition. Cinematic warm amber "
+            "lighting, magical atmosphere, 24fps."
         ),
         "seed": 100,
-        # Shot 1 uses the user-supplied first frame
         "first_frame": "julia-hogwarts.png",
     },
     {
@@ -45,14 +47,14 @@ SHOTS = [
         "megapixels": 0.4,
         "duration": 5.0,
         "prompt": (
-            "Julia, the young witch with long brown hair, pushes back her chair "
-            "and stands up from her wooden desk in a Hogwarts Transfiguration "
-            "classroom. She gathers her books and walks toward the heavy stone "
-            "doorway. Other students visible in soft background. Cinematic warm "
-            "amber candlelight, 24fps."
+            "Continue from the exact previous frame. Keep the same Julia: same "
+            "face, age, long brown hair, brown eyes, Gryffindor robe and identity. "
+            "Do not create a different girl. No balloons and no unrelated scene. "
+            "Julia pushes back her chair, stands up from her desk, gathers her "
+            "books and walks toward the heavy stone classroom doorway. Preserve "
+            "the Hogwarts Transfiguration classroom and warm candlelight. 24fps."
         ),
         "seed": 101,
-        # Shot 2 reads last_frame.png that run_workflow.py writes from shot 1
         "first_frame": "last_frame.png",
     },
     {
@@ -60,10 +62,12 @@ SHOTS = [
         "megapixels": 0.4,
         "duration": 5.0,
         "prompt": (
-            "Wide cinematic shot of Julia, the young witch with long brown hair, "
-            "walking down a long Hogwarts stone corridor lined with lit torches "
-            "and magical paintings. Dust motes drift in the torchlight. Arched "
-            "stone ceiling. Slow camera dolly following her. 24fps, warm cinematic."
+            "Continue from the exact previous frame and preserve Julia's identity "
+            "exactly: same face, age, long brown hair, brown eyes, Gryffindor robe. "
+            "No different girl, no balloons, no unrelated subjects. Julia walks "
+            "through a long Hogwarts stone corridor lined with lit torches and "
+            "magical paintings. Dust motes drift in torchlight, arched stone "
+            "ceiling, slow camera dolly following her. Warm cinematic 24fps."
         ),
         "seed": 102,
         "first_frame": "last_frame.png",
@@ -73,12 +77,13 @@ SHOTS = [
         "megapixels": 0.4,
         "duration": 5.0,
         "prompt": (
-            "Breathtaking wide shot from inside a Hogwarts stone corridor, "
-            "looking out through a tall arched window. The view shows the "
-            "Scottish highlands — vast green lake, distant mountains, the "
-            "towers of Hogwarts castle in the foreground. Golden hour sunlight "
-            "streaming in through the window. Magical atmosphere, 24fps, "
-            "cinematic wide shot."
+            "Continue from the exact previous Hogwarts corridor frame. Preserve "
+            "the same Julia and her visual identity until the camera reaches the "
+            "window; do not introduce a different girl or balloons. The camera "
+            "moves toward a tall arched window and reveals a breathtaking view "
+            "of Hogwarts surroundings: Scottish highlands, vast green lake, "
+            "distant mountains and Hogwarts castle towers. Golden-hour sunlight "
+            "streams through the window. Cinematic wide shot, 24fps."
         ),
         "seed": 103,
         "first_frame": "last_frame.png",
@@ -86,21 +91,36 @@ SHOTS = [
 ]
 
 
-def stage_frame(frame_name: str, comfyui_input: Path, shots_dir: Path) -> Path:
-    """Ensure the named frame is in comfyui_input/. Returns its absolute path."""
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as f:
+        for block in iter(lambda: f.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def stage_frame(frame_name: str, target_name: str,
+                comfyui_input: Path, shots_dir: Path) -> Path:
+    """Copy the intended frame to a unique ComfyUI input name.
+
+    Continuity frames must be sourced from the current run's shots directory
+    before checking ComfyUI/input/. Reusing a generic `last_frame.png` from a
+    previous run caused the Julia sequence to jump to an unrelated balloon.
+    """
     search_paths = [
-        comfyui_input / frame_name,     # already staged
-        shots_dir / frame_name,          # last_frame.png produced here
-        HERE / "outputs" / frame_name,   # older outputs
+        shots_dir / frame_name,
+        comfyui_input / frame_name,
+        HERE / "outputs" / frame_name,
         HERE / "outputs" / "hogwarts" / frame_name,
     ]
     src = next((p for p in search_paths if p.exists()), None)
     if src is None:
         raise FileNotFoundError(f"first_frame not found in any of: {search_paths}")
-    target = comfyui_input / frame_name
+
+    target = comfyui_input / target_name
     if src.resolve() != target.resolve():
         shutil.copy2(src, target)
-        print(f"[stage] {src} → {target}")
+    print(f"[stage] source={src} target={target} sha256={sha256_file(target)[:16]}")
     return target
 
 
@@ -114,26 +134,29 @@ def extract_last_frame(mp4: Path, out_png: Path) -> Path:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--shots-dir", type=Path, default=HERE / "outputs" / "hogwarts")
+    ap.add_argument("--shots-dir", type=Path, default=HERE / "outputs" / "hogwarts-v2")
     ap.add_argument("--comfyui-input", type=Path, default=HERE / "ComfyUI" / "input")
     ap.add_argument("--server", default="http://127.0.0.1:8188")
     ap.add_argument("--timeout", type=int, default=1800)
+    ap.add_argument("--aspect-ratio", default="16:9 (Widescreen)")
     args = ap.parse_args()
 
     args.shots_dir.mkdir(parents=True, exist_ok=True)
     args.comfyui_input.mkdir(parents=True, exist_ok=True)
-
     summary = []
+    manifest = []
+
     for i, shot in enumerate(SHOTS, 1):
         print(f"\n========== SHOT {i}/{len(SHOTS)}: {shot['name']} ==========")
-        # Stage first_frame for ComfyUI's LoadImage
-        stage_frame(shot["first_frame"], args.comfyui_input, args.shots_dir)
+        input_name = f"{shot['name']}-first.png"
+        source = stage_frame(shot["first_frame"], input_name,
+                             args.comfyui_input, args.shots_dir)
 
-        # Build the I2V workflow JSON
         workflow_json = args.shots_dir / f"{shot['name']}.json"
         subprocess.run([
             sys.executable, str(HERE / "build_upscale_workflow.py"),
-            "--frame", str(args.comfyui_input / shot["first_frame"]),
+            "--frame", str(source),
+            "--aspect-ratio", args.aspect_ratio,
             "--megapixels", str(shot["megapixels"]),
             "--duration", str(shot["duration"]),
             "--turbo-steps", "8",
@@ -142,7 +165,6 @@ def main() -> int:
             "--out", str(workflow_json),
         ], check=True)
 
-        # Run the workflow
         out_dir = args.shots_dir / shot["name"]
         rc = subprocess.run([
             sys.executable, str(HERE / "run_workflow.py"),
@@ -160,44 +182,55 @@ def main() -> int:
             print(f"!!! shot {i} failed with rc={rc}")
             return rc
 
-        # Find the MP4 in the output dir
-        mp4s = sorted(out_dir.glob("*.mp4"))
+        mp4s = sorted(out_dir.glob("*.mp4"),
+                      key=lambda p: p.stat().st_mtime)
         if not mp4s:
             print(f"!!! no mp4 produced for shot {i}")
             return 1
         latest_mp4 = mp4s[-1]
 
-        # Save last_frame for next shot
         last_png = args.shots_dir / "last_frame.png"
         extract_last_frame(latest_mp4, last_png)
-
-        # Copy the mp4 to shots_dir for easy concat later
         dest = args.shots_dir / f"{shot['name']}.mp4"
         shutil.copy2(latest_mp4, dest)
         summary.append(dest)
+        manifest.append({
+            "shot": shot["name"],
+            "prompt": shot["prompt"],
+            "seed": shot["seed"],
+            "first_frame": input_name,
+            "first_frame_sha256": sha256_file(source),
+            "output": str(dest),
+            "output_sha256": sha256_file(dest),
+            "megapixels": shot["megapixels"],
+            "aspect_ratio": args.aspect_ratio,
+        })
         print(f"[ok] shot {i} → {dest}")
 
-    # --- Concatenate ---
+    (args.shots_dir / "manifest.json").write_text(
+        json.dumps(manifest, indent=2) + "\n"
+    )
+
     print("\n========== CONCATENATING ==========")
     concat_list = args.shots_dir / "concat.txt"
-    with open(concat_list, "w") as f:
+    with concat_list.open("w") as f:
         for mp4 in summary:
             f.write(f"file '{mp4.resolve()}'\n")
     final_mp4 = args.shots_dir / "julia-hogwarts-all.mp4"
     subprocess.run([
         "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", str(concat_list),
-        "-c", "copy", str(final_mp4),
+        "-c:v", "libx264", "-preset", "fast", "-crf", "18",
+        "-c:a", "aac", "-ar", "32000", "-movflags", "+faststart",
+        str(final_mp4),
     ], check=True)
     print(f"[concat] → {final_mp4}")
 
-    # --- Probe final ---
     info = subprocess.check_output([
         "ffprobe", "-v", "error",
         "-show_entries", "stream=codec_name,width,height,r_frame_rate,duration,nb_frames",
         "-of", "csv=p=0", str(final_mp4),
     ]).decode().strip()
     print(f"[probe] {info}")
-
     print(f"\nDONE. Final concat: {final_mp4}")
     return 0
 
