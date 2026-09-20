@@ -431,7 +431,7 @@ def submit(server: str, workflow: dict, client_id: str) -> str:
 
 
 def poll(server: str, prompt_id: str, *, timeout_s: int = 1800) -> dict:
-    """Poll /history/{prompt_id} until done or timeout."""
+    """Poll /history/{prompt_id} until success, error, or timeout."""
     start = time.time()
     last_status = None
     while time.time() - start < timeout_s:
@@ -440,13 +440,17 @@ def poll(server: str, prompt_id: str, *, timeout_s: int = 1800) -> dict:
             hist = json.loads(resp.read())
         entry = hist.get(prompt_id)
         if entry is not None:
-            status = entry.get("status", {})
-            completed = status.get("completed", False)
-            cur_status = status.get("status_str", "?")
+            status_data = entry.get("status", {})
+            cur_status = status_data.get("status_str", "?")
             if cur_status != last_status:
                 print(f"[poll] status={cur_status}  t={time.time()-start:.1f}s")
                 last_status = cur_status
-            if completed:
+            if cur_status in {"error", "failed"}:
+                raise RuntimeError(
+                    f"ComfyUI job failed: prompt_id={prompt_id}, "
+                    f"status={cur_status}, messages={status_data.get('messages', [])}"
+                )
+            if status_data.get("completed", False):
                 return entry
         time.sleep(3)
     raise TimeoutError(f"prompt {prompt_id} did not finish in {timeout_s}s")
