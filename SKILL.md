@@ -5,6 +5,22 @@ locally on the workstation. This skill covers image generation through Forge,
 MiniMax H3 T2V/I2V/R2V video generation, multi-shot continuity, and NVIDIA RTX
 Video Super Resolution.
 
+## Installation contract
+
+When a user gives the repository URL, clone it first and run the bootstrap
+script. Do not guess paths or install into system Python:
+
+```bash
+git clone https://github.com/postward-cc/postward-local-media-gen.git
+cd postward-local-media-gen
+./bootstrap.sh
+```
+
+`bootstrap.sh` is idempotent, hardware-neutral, and installs only under
+`comfyui-runtime/venv` and `comfyui-runtime/ComfyUI`. It does not download H3
+weights. Read `INSTALL.md` for options and `skill.json` for the machine-readable
+contract.
+
 ## Operating contract
 
 1. Run `scripts/doctor.py` before choosing a workflow.

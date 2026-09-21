@@ -29,20 +29,32 @@ added later on top of the stable CLI seam.
 ## Start here
 
 ```bash
+git clone https://github.com/postward-cc/postward-local-media-gen.git
+cd postward-local-media-gen
 cat SKILL.md
 python scripts/doctor.py
-cat reference/hardware-profiles.md
-cat reference/concurrency.md
 ```
+
+Install the local adapter without modifying system Python or CUDA:
+
+```bash
+./bootstrap.sh
+```
+
+The bootstrap is idempotent and does **not** download H3 weights. See
+`INSTALL.md` for options, `skill.json` for the machine-readable contract, and
+`reference/license-compliance.md` before downloading licensed assets.
 
 `doctor.py` returns JSON with GPU name, VRAM, free VRAM, CUDA/PyTorch state,
 RAM, disk, weights detected, and the recommended profile.
-
 ## Repository layout
 
 ```text
 postward-local-media-gen/
 ├── SKILL.md                              OMP entrypoint
+├── skill.json                            machine-readable skill manifest
+├── INSTALL.md                            installation contract
+├── bootstrap.sh                          isolated idempotent bootstrap
 ├── CONTEXT.md                            domain glossary
 ├── README.md                             this file
 ├── docs/adr/                             architectural decisions
@@ -50,6 +62,7 @@ postward-local-media-gen/
 ├── reference/                            model-facing operational references
 │   ├── hardware-profiles.md
 │   ├── concurrency.md
+│   ├── image-generation.md
 │   ├── license-compliance.md
 │   └── workflow-recipes.md
 ├── scripts/                              hardware and queue interfaces
@@ -79,27 +92,24 @@ postward-local-media-gen/
 Validated baseline: RTX 4060 8 GB, 62 GB RAM, NVIDIA driver 580.173.02,
 CUDA 13.0 runtime, PyTorch 2.11.0+cu128.
 
-## Bootstrap the H3 adapter
+## Bootstrap the local adapter
 
 ```bash
-cd comfyui-runtime
-uv venv --python 3.12 venv
-source venv/bin/activate
-uv pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
-git clone --depth 1 --branch v0.36.0 https://github.com/comfyanonymous/ComfyUI.git
-uv pip install -r ComfyUI/requirements.txt sageattention nvidia-vfx
-git clone --depth 1 https://github.com/Comfy-Org/Nvidia_RTX_Nodes_ComfyUI \
-  ComfyUI/custom_nodes/Nvidia_RTX_Nodes_ComfyUI
+./bootstrap.sh
 ```
 
-Before downloading H3 weights, the user must confirm the applicable license:
+The bootstrap creates an isolated environment under `comfyui-runtime/venv/`,
+installs ComfyUI and its custom nodes, and does not download model weights.
+Use:
 
 ```bash
-LICENSE_OK=1 ./fetch_h3_weights.sh
+python scripts/doctor.py
+LICENSE_OK=1 ./comfyui-runtime/fetch_h3_weights.sh
+./comfyui-runtime/launch.sh
 ```
 
-See `reference/license-compliance.md`. The downloader never bypasses this
-explicit gate.
+See `INSTALL.md` for `--dry-run`, skip options, uninstall, and hardware-aware
+installation details. The H3 weight download remains license-gated.
 
 ## Queueing and concurrent requests
 

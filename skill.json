@@ -1,0 +1,31 @@
+{
+  "name": "postward-local-media-gen",
+  "version": "0.1.0",
+  "display_name": "Postward Local Media Generation",
+  "description": "Hardware-aware local image and video generation for Postward users.",
+  "entrypoint": "SKILL.md",
+  "install": "./bootstrap.sh",
+  "doctor": "python scripts/doctor.py",
+  "queue": "python scripts/job_queue.py",
+  "supported_media": ["image", "video", "audio", "upscale"],
+  "local_adapters": [
+    "Stable Diffusion WebUI Forge",
+    "ComfyUI MiniMax H3",
+    "NVIDIA RTX Video Super Resolution"
+  ],
+  "runtime": {
+    "platform": "linux",
+    "gpu": "nvidia-cuda",
+    "python": ">=3.11,<3.14",
+    "minimum_vram_gb": 8,
+    "recommended_ram_gb": 32
+  },
+  "license_gate": {
+    "h3_weights": "explicit-user-confirmation-required",
+    "command": "LICENSE_OK=1 ./comfyui-runtime/fetch_h3_weights.sh"
+  },
+  "concurrency": {
+    "gpu_inference_jobs": 1,
+    "queue": "python scripts/job_queue.py"
+  }
+}
