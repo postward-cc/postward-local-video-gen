@@ -28,7 +28,7 @@ SHOTS = [
     {
         "name": "shot1-smile",
         "megapixels": 0.4,
-        "duration": 5.0,
+        "duration": 3.0,
         "prompt": (
             "The exact girl from the first frame is Julia. Preserve her exact "
             "face, age, long brown hair, brown eyes, Gryffindor robe and identity. "
@@ -37,7 +37,7 @@ SHOTS = [
             "Transfiguration classroom. She smiles warmly at the camera, then "
             "turns her head slowly to look at the professor at the chalkboard. "
             "Preserve the classroom, owl and composition. Cinematic warm amber "
-            "lighting, magical atmosphere, 24fps."
+            "lighting, magical atmosphere, natural room ambience only, no dialogue, 24fps."
         ),
         "seed": 100,
         "first_frame": "julia-hogwarts.png",
@@ -45,14 +45,14 @@ SHOTS = [
     {
         "name": "shot2-stands",
         "megapixels": 0.4,
-        "duration": 5.0,
+        "duration": 3.0,
         "prompt": (
             "Continue from the exact previous frame. Keep the same Julia: same "
             "face, age, long brown hair, brown eyes, Gryffindor robe and identity. "
             "Do not create a different girl. No balloons and no unrelated scene. "
             "Julia pushes back her chair, stands up from her desk, gathers her "
             "books and walks toward the heavy stone classroom doorway. Preserve "
-            "the Hogwarts Transfiguration classroom and warm candlelight. 24fps."
+            "the Hogwarts Transfiguration classroom and warm candlelight. Natural ambience only, no dialogue, 24fps."
         ),
         "seed": 101,
         "first_frame": "last_frame.png",
@@ -60,14 +60,14 @@ SHOTS = [
     {
         "name": "shot3-corridor",
         "megapixels": 0.4,
-        "duration": 5.0,
+        "duration": 3.0,
         "prompt": (
             "Continue from the exact previous frame and preserve Julia's identity "
             "exactly: same face, age, long brown hair, brown eyes, Gryffindor robe. "
             "No different girl, no balloons, no unrelated subjects. Julia walks "
             "through a long Hogwarts stone corridor lined with lit torches and "
             "magical paintings. Dust motes drift in torchlight, arched stone "
-            "ceiling, slow camera dolly following her. Warm cinematic 24fps."
+            "ceiling, slow camera dolly following her. Warm cinematic lighting, natural ambience only, no dialogue, 24fps."
         ),
         "seed": 102,
         "first_frame": "last_frame.png",
@@ -75,7 +75,7 @@ SHOTS = [
     {
         "name": "shot4-window",
         "megapixels": 0.4,
-        "duration": 5.0,
+        "duration": 3.0,
         "prompt": (
             "Continue from the exact previous Hogwarts corridor frame. Preserve "
             "the same Julia and her visual identity until the camera reaches the "
@@ -83,7 +83,7 @@ SHOTS = [
             "moves toward a tall arched window and reveals a breathtaking view "
             "of Hogwarts surroundings: Scottish highlands, vast green lake, "
             "distant mountains and Hogwarts castle towers. Golden-hour sunlight "
-            "streams through the window. Cinematic wide shot, 24fps."
+            "streams through the window. Cinematic wide shot, natural ambience only, no dialogue, 24fps."
         ),
         "seed": 103,
         "first_frame": "last_frame.png",
